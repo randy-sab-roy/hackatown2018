@@ -7,12 +7,15 @@
 #include <sys/stat.h>
 #include <chrono>
 
+#define _ENABLE_OPENCV_SCALING
+#define TARGET_SHOW_FPS (60)
+
 using namespace cv;
 
-static char INPUT_DATA_FILE[] = "input.data";
-static char INPUT_CFG_FILE[] = "input.cfg";
-static char INPUT_WEIGHTS_FILE[] = "input.weights";
-static char INPUT_AV_FILE[] = "input.mp4";
+static char INPUT_DATA_FILE[] = "input/input.data";
+static char INPUT_CFG_FILE[] = "input/input.cfg";
+static char INPUT_WEIGHTS_FILE[] = "input/input.weights";
+static char INPUT_AV_FILE[] = "input/input.mp4";
 
 int main()
 {
@@ -28,7 +31,7 @@ int main()
     int expectedWidth = 0;
     int expectedHeight = 0;
 
-    bool isSuccessful = darknet.Setup(params, expectedWidth, expectedHeight);
+    bool isSuccessful = darknet->Setup(params, expectedWidth, expectedHeight);
     if (!isSuccessful)
     {
         return -1;
@@ -38,16 +41,17 @@ int main()
     Mat image;
 
     namedWindow("Guardius", CV_WINDOW_AUTOSIZE);
-
+    VideoCapture cap ( INPUT_AV_FILE );
     while (1)
     {
         bool success = cap.read(image);
+        int imageWidthPixels = 0, imageHeightPixels = 0;
 
         if (!success || image.empty())
         {
-            if (p)
-                delete p;
-            p = nullptr;
+            if (darknet)
+                delete darknet;
+            darknet = nullptr;
             waitKey();
             return -1;
         }
@@ -67,17 +71,17 @@ int main()
         int numObjects = 0;
 
         // Detect the objects in the image
-        p->Detect(image, 0.24, 0.5, numObjects);
+        darknet->Detect(image, 0.24, 0.5, numObjects);
 
         std::chrono::duration<double> detectionTime = (std::chrono::system_clock::now() - detectionStartTime);
 
         if (numObjects > 0)
         {
-            boxes = new box[numObjects];
-            labels = new std::string[numObjects];
+            box* boxes = new box[numObjects];
+            std::string* labels = new std::string[numObjects];
 
             // Get boxes and labels
-            p->GetBoxes(boxes, labels, numObjects);
+            darknet->GetBoxes(boxes, labels, numObjects);
 
             int leftTopX = 0, leftTopY = 0, rightBotX = 0, rightBotY = 0;
             for (int objId = 0; objId < numObjects; objId++)
