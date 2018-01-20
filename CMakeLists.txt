@@ -5,14 +5,6 @@ set(CMAKE_CXX_STANDARD 11)
 
 #Set lib directories
 set(DARKNET_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/include/darknet")
-
-if (${APPLE})
-    set(DARKNET_LIB     "${CMAKE_SOURCE_DIR}/lib/libdarknet-cpp-shared-mac.so")
-else()
-    set(DARKNET_LIB     "${CMAKE_SOURCE_DIR}/lib/libdarknet-cpp-shared.so")
-endif ()
-
-message(DARKNET_INCLUDE_DIR: ${DARKNET_INCLUDE_DIR})
 message(DARKNET_LIB: ${DARKNET_LIB})
 
 include_directories(include)
@@ -60,10 +52,16 @@ if (CUDA_FOUND)
         link_directories(
                 /usr/local/cuda/lib #mac
         )
+        set(DARKNET_LIB     "${CMAKE_SOURCE_DIR}/lib/libdarknet-cpp-shared-mac.so")
+        message(DARKNET_INCLUDE_DIR: ${DARKNET_INCLUDE_DIR})
+
     else()
         link_directories(
                 /usr/local/cuda/lib64 #linux
         )
+        set(DARKNET_LIB     "${CMAKE_SOURCE_DIR}/lib/libdarknet-cpp-shared-ubuntu-cuda.so")
+        message(DARKNET_INCLUDE_DIR: ${DARKNET_INCLUDE_DIR})
+
     endif ()
 
     cuda_add_executable(${PROJECT_NAME}
@@ -89,6 +87,14 @@ if (CUDA_FOUND)
             )
 
 else()
+
+    if (${APPLE})
+        #?!?
+    else()
+        set(DARKNET_LIB     "${CMAKE_SOURCE_DIR}/lib/libdarknet-cpp-shared-ubuntu-sans-cuda.so")
+        message(DARKNET_INCLUDE_DIR: ${DARKNET_INCLUDE_DIR})
+
+    endif ()
 
     #Darknet source
     add_executable(${PROJECT_NAME}
