@@ -10,6 +10,7 @@ public:
 	void addPosition(box b);
 	// Gets the speed in px per frame
 	Vector2D getVelocity();
+	int entityType;
 
 private:
 	vector<Vector2D> history;

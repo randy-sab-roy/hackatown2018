@@ -32,7 +32,10 @@ int main()
     int expectedWidth = 0;
     int expectedHeight = 0;
 
-    bool isSuccessful = darknet->Setup(params, expectedWidth, expectedHeight);
+    box* boxes = 0;
+    std::string* labels;
+
+        bool isSuccessful = darknet->Setup(params, expectedWidth, expectedHeight);
     if (!isSuccessful)
     {
         return -1;
@@ -42,7 +45,7 @@ int main()
     Mat image;
 
     namedWindow("Guardius", CV_WINDOW_AUTOSIZE);
-    VideoCapture cap ( INPUT_AV_FILE );
+    VideoCapture cap(INPUT_AV_FILE);
     while (1)
     {
         bool success = cap.read(image);
@@ -78,8 +81,8 @@ int main()
 
         if (numObjects > 0)
         {
-            box* boxes = new box[numObjects];
-            std::string* labels = new std::string[numObjects];
+            boxes = new box[numObjects];
+            labels = new std::string[numObjects];
 
             // Get boxes and labels
             darknet->GetBoxes(boxes, labels, numObjects);
@@ -100,7 +103,6 @@ int main()
                 // Show labels
                 if (labels[objId].c_str())
                 {
-                    DPRINTF("Label:%s\n\n", labels[objId].c_str());
                     putText(image, labels[objId].c_str(), cvPoint(leftTopX, leftTopY),
                             FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(200, 200, 250), 1, CV_AA);
                 }
