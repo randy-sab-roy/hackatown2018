@@ -3,6 +3,7 @@ arapaho
 *.weights
 *.mp4
 input
+build
 
 # Prerequisites
 *.d
