@@ -1,4 +1,4 @@
-#include "entity.hpp"
+#include "../include/entity.hpp"
 
 const int HISTORY_SIZE = 5;
 
