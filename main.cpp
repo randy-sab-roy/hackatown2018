@@ -116,7 +116,7 @@ int main()
                 labels = NULL;
             }
         }
-        imshow("Arapaho", image);
+        imshow("Guardius", image);
         waitKey((1000 / TARGET_SHOW_FPS));
     }
 
