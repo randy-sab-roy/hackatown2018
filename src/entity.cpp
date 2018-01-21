@@ -15,7 +15,7 @@ Vector2D Entity::lastPosition()
     return this->history.front();
 }
 
-Vector2D Entity::getVelocity()
+Vector2D Entity::getVelocity() const 
 {
     Vector2D velocity = Vector2D(0, 0);
     for (int i = 1; i < this->history.size(); i++)
@@ -27,20 +27,54 @@ Vector2D Entity::getVelocity()
     return velocity;
 }
 
-int Entity::calculateRisk(Entity ent) {
-    Vector2D pos1 = this->history[0];
+int Entity::calculateRisk(const Entity& ent) {
+    Vector2D pos1 = history[0];
     Vector2D pos2 = ent.history[0];
-    if ((this->getVelocity()*ent.getVelocity())/(sqrt((pos1.x*pos1.x + pos1.y*pos1.y)*(pos2.x*pos2.x + pos2.y*pos2.y))) < 0.70710678118)
-    {
-        // Perpendicular
-//        cout << "perpendiculaire" << endl;
 
-        return 1;
+    Vector2D delta1 = this->getVelocity();
+    Vector2D delta2 = ent.getVelocity();
+
+
+    if (abs((delta1*delta2)/(sqrt((delta1.x*delta1.x + delta1.y*delta1.y)*(delta2.x*delta2.x + delta2.y*delta2.y)))) < 0.70710678118) {
+        // Perpendicular
+        Vector2D intersect(0, 0);
+        if (delta1.x == 0) {
+            double a2 = delta2.y / delta2.x;
+            double b2 = pos2.y - a2 * pos2.x;
+            intersect.x = pos1.x;
+            intersect.y = a2 * intersect.x + b2;
+        } else if (delta2.x == 0) {
+            double a1 = delta1.y / delta1.x;
+            double b1 = pos1.y - a1 * pos1.x;
+            intersect.x = pos2.x;
+            intersect.y = a1 * intersect.x + b1;
+        }
+        else
+        {
+            double a1= delta1.y / delta1.x;
+            double a2 = delta2.y / delta2.x;
+            double b1 = pos1.y - a1*pos1.x;
+            double b2 = pos2.y - a2*pos2.x;
+            intersect.x = (b2-b1)/(a1-a2);
+            intersect.y = a1*intersect.x+b1;
+        }
+
+        double d1 = (pos1 - intersect).magnitude2()/delta1.magnitude2();
+        double d2 = (pos2 - intersect).magnitude2()/delta2.magnitude2();
+
+        if(d1 > 0 && d2 > 0)
+        {
+            if(abs(d1 - d2) < COLLISION_THRESHOLD)
+            {
+                return 1000/abs(d1 - d2);
+            }
+        }
+
+        return 0;
     }
     else
     {
         // Parallel
-//        cout << "parallele" << endl;
         return 0;
     }
 }

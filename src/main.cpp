@@ -11,9 +11,8 @@
 #include <vector>
 #include <iostream>
 
-//#include <restclient-cpp/restclient.h>
+#include <restclient-cpp/restclient.h>
 
-#define _ENABLE_OPENCV_SCALING
 #define TARGET_SHOW_FPS (120)
 #define MOVEMENT_THRESHOLD (50000)
 
@@ -125,6 +124,7 @@ void updateEntities(box* boxes, string* labels, int numObjects, int imageWidthPi
         {
             Entity ent = Entity();
             ent.addPosition(centers[i]);
+            ent.entityType = labels[i];
             entities.push_back(ent);
             ent.lastFrame = currentFrame;
 //            cout << "N'importe quoi" << endl;
@@ -146,9 +146,6 @@ int getRiskLevel()
 
 int main()
 {
-//    RestClient::Response r = RestClient::get("https://api.ipify.org?format=json");
-//    cout << r.body << endl;
-
     ArapahoV2 *darknet = new ArapahoV2();
     ArapahoV2Params params;
 
@@ -172,6 +169,7 @@ int main()
 
     ArapahoV2ImageBuff imageBuffer;
     Mat image;
+    int lastRisk = 0;
 
     namedWindow("Guardius", CV_WINDOW_KEEPRATIO);
     VideoCapture cap(INPUT_AV_FILE);
@@ -232,7 +230,14 @@ int main()
 
 
         // This is where magic happens
-        getRiskLevel();
+        int risk = getRiskLevel();
+        cout << risk << endl;
+//        if (lastRisk != ((risk / 1000 > 15) ? 15 : (risk/1000)))
+//        {
+//            lastRisk = ((risk / 1000 > 15) ? 15 : (risk/1000));
+//            cout << risk << " --- " << ((risk / 1000 > 15) ? 15 : (risk/1000)) << endl;
+////            RestClient::Response r = RestClient::get("http://10.0.1.4/alertLevel?params=" + to_string(((risk / 500 > 15) ? 15 : (risk/1000))));
+//        }
 
         Mat dst;
         resize(image, dst, Size(), 2, 2, INTER_LINEAR);
