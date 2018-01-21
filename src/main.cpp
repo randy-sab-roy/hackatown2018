@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <chrono>
 #include <vector>
+#include <iostream>
 
 #define _ENABLE_OPENCV_SCALING
 #define TARGET_SHOW_FPS (60)
@@ -94,7 +95,7 @@ void updateEntities(box* boxes, int numObjects)
             entities.push_back(ent);
         }
     }
-    EPRINTF(entities.size());
+    std::cout << (entities.size()) << std::endl;
 }
 
 int main()
@@ -161,6 +162,7 @@ int main()
             // Get boxes and labels
             darknet->GetBoxes(boxes, labels, numObjects);
             displayBoxes(boxes, numObjects, imageWidthPixels, imageHeightPixels, image, labels);
+            updateEntities(boxes, numObjects);
 
             if (boxes)
             {
