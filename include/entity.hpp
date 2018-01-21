@@ -12,6 +12,7 @@ public:
 	// Gets the speed in px per frame
 	Vector2D getVelocity();
 	int entityType;
+    int lastFrame;
 
 private:
 	vector<Vector2D> history;

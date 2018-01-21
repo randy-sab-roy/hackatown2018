@@ -11,11 +11,14 @@
 #include <vector>
 #include <iostream>
 
+//#include <restclient-cpp/restclient.h>
+
 #define _ENABLE_OPENCV_SCALING
-#define TARGET_SHOW_FPS (60)
-#define MOVEMENT_THRESHOLD (20)
+#define TARGET_SHOW_FPS (30)
+#define MOVEMENT_THRESHOLD (500)
 
 using namespace cv;
+using namespace std;
 
 static char INPUT_DATA_FILE[] = "input/input.data";
 static char INPUT_CFG_FILE[] = "input/input.cfg";
@@ -23,10 +26,11 @@ static char INPUT_WEIGHTS_FILE[] = "input/input.weights";
 static char INPUT_AV_FILE[] = "input/input.mp4";
 
 vector<Entity> entities;
+int currentFrame = 0;
 
-Vector2D centerPoint(box b)
+Vector2D centerPoint(box b, int imageWidthPixels, int imageHeightPixels)
 {
-    return Vector2D(b.x + (b.w / 2), b.y + (b.h / 2));
+    return Vector2D(b.x * imageWidthPixels, b.y * imageHeightPixels);
 }
 
 void displayBoxes(box *boxes, int numObjects, int imageWidthPixels, int imageHeightPixels, Mat image, string * labels)
@@ -53,13 +57,13 @@ void displayBoxes(box *boxes, int numObjects, int imageWidthPixels, int imageHei
     }
 }
 
-void updateEntities(box* boxes, int numObjects)
+void updateEntities(box* boxes, int numObjects, int imageWidthPixels, int imageHeightPixels)
 {
     Vector2D * centers = new Vector2D[numObjects];
     bool * enabled = new bool[numObjects];
     for(int i = 0; i < numObjects; i++)
     {
-        centers[i] = centerPoint(boxes[i]);
+        centers[i] = centerPoint(boxes[i], imageWidthPixels, imageHeightPixels);
         enabled[i] = true;
     }
     
@@ -72,18 +76,29 @@ void updateEntities(box* boxes, int numObjects)
             if(enabled[j])
             {
                 int tmpDistance = entities[i].lastPosition().distance(centers[j]);
-                if((closestDistance > -1) && tmpDistance < closestDistance)
+                if((closestDistance == -1) || tmpDistance < closestDistance)
                 {
                     closestDistance = tmpDistance;
                     closestIndex = j;
                 }
             }
         }
+        cout << closestDistance << endl;
+
         if(closestDistance > -1 && closestDistance < MOVEMENT_THRESHOLD)
         {
             entities[i].addPosition(centers[closestIndex]);
             enabled[closestIndex] = false;
+            entities[i].lastFrame = currentFrame;
         }
+    }
+
+    for (int i = 0; i < entities.size(); ++i) {
+        if(entities[i].lastFrame != currentFrame)
+        {
+            entities.erase(entities.begin() + i);
+        }
+
     }
 
     for(int i = 0; i < numObjects; i++)
@@ -93,6 +108,7 @@ void updateEntities(box* boxes, int numObjects)
             Entity ent = Entity();
             ent.addPosition(centers[i]);
             entities.push_back(ent);
+            ent.lastFrame = currentFrame;
         }
     }
     std::cout << (entities.size()) << std::endl;
@@ -100,6 +116,9 @@ void updateEntities(box* boxes, int numObjects)
 
 int main()
 {
+//    RestClient::Response r = RestClient::get("https://api.ipify.org?format=json");
+//    cout << r.body << endl;
+
     ArapahoV2 *darknet = new ArapahoV2();
     ArapahoV2Params params;
 
@@ -128,6 +147,7 @@ int main()
     VideoCapture cap(INPUT_AV_FILE);
     while (1)
     {
+        currentFrame++;
         bool success = cap.read(image);
         int imageWidthPixels = 0, imageHeightPixels = 0;
 
@@ -162,19 +182,21 @@ int main()
             // Get boxes and labels
             darknet->GetBoxes(boxes, labels, numObjects);
             displayBoxes(boxes, numObjects, imageWidthPixels, imageHeightPixels, image, labels);
-            updateEntities(boxes, numObjects);
+            updateEntities(boxes, numObjects, imageWidthPixels, imageHeightPixels);
 
             if (boxes)
             {
                 delete[] boxes;
-                boxes = NULL;
+                boxes = nullptr;
             }
             if (labels)
             {
                 delete[] labels;
-                labels = NULL;
+                labels = nullptr;
             }
         }
+
+
 
         // This is where magic happens
 
