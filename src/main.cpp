@@ -1,5 +1,6 @@
 #include "../arapaho/arapaho.hpp"
 #include "../include/entity.hpp"
+#include "../include/arduino-serial-lib.h"
 #include <string.h>
 #include "opencv2/core/core.hpp"
 #include <opencv2/imgproc.hpp>
@@ -153,11 +154,8 @@ int getRiskLevel()
 int main()
 {
 
-//    FILE *serialArduino;
-//    serialArduino = fopen("/dev/tty.usbmodem1451", "wr");
-//
-//    fprintf(serialArduino, "2");
-
+    int serialSocket = serialport_init("/dev/cu.usbmodem1411", 9600);
+    serialport_write(serialSocket, "0");
 
 
     ArapahoV2 *darknet = new ArapahoV2();
@@ -250,14 +248,18 @@ int main()
                   cvPoint(0, imageHeightPixels - 30),
                   cvPoint(60, imageHeightPixels),
                   CV_RGB(0, 0, 0), CV_FILLED, 8, 0);
+
         putText(image, to_string(risk), cvPoint(7, imageHeightPixels - 7),
                 FONT_HERSHEY_PLAIN, 1, risk > 160 ? CV_RGB(255, 0, 0) : CV_RGB(0, 255, 0), 1, CV_AA);
 
+        serialport_write(serialSocket, std::to_string(constrain(0, 16, risk / 20) + 1).c_str());
+
         Mat dst;
-        resize(image, dst, Size(), 2, 2, INTER_LINEAR);
+        resize(image, dst, Size(), 4, 4, INTER_LINEAR);
         imshow("Guardius", dst);
         waitKey((1000 / TARGET_SHOW_FPS));
     }
 
+    serialport_close(serialSocket);
     return 0;
 }

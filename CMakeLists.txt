@@ -48,10 +48,6 @@ if(CMAKE_VERSION VERSION_LESS "2.8.11")
     include_directories(${OpenCV_INCLUDE_DIRS})
 endif()
 
-#restclient-cpp
-include_directories(/usr/local/Cellar/restclient-cpp/0.4.4/include/restclient-cpp/)
-set(RESTCLIENT_LIB     "/usr/local/Cellar/restclient-cpp/0.4.4/lib/librestclient-cpp.dylib")
-
 #Add source for CUDA or not
 if (CUDA_FOUND)
 
@@ -77,6 +73,8 @@ if (CUDA_FOUND)
 
             src/entity.cpp
             src/Vector2D.cpp
+
+            src/arduino-serial-lib.cpp
 
             src/main.cpp
             )
@@ -106,6 +104,8 @@ else()
             src/entity.cpp
             src/Vector2D.cpp
 
+            src/arduino-serial-lib.cpp
+
             src/main.cpp
             )
 
@@ -118,7 +118,6 @@ target_link_libraries(${PROJECT_NAME}
         stdc++
         ${OpenCV_LIBS}
         ${DARKNET_LIB}
-        ${RESTCLIENT_LIB}
         )
 
 #Copy lib

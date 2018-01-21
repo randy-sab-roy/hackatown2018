@@ -20,7 +20,7 @@ byte square[8] = {
 
 void setup() {
 
-  Serial.begin(250000);
+  Serial.begin(9600);
   
   // set up the LCD's number of columns and rows:
   lcd.begin(16, 2);
@@ -33,24 +33,33 @@ void setup() {
   //Buzzer
   pinMode(8, OUTPUT);
   digitalWrite(8, LOW);
-  //Wemos rx
-  pinMode(3, INPUT);
-  pinMode(4, INPUT);
-  pinMode(5, INPUT);
-  pinMode(6, INPUT);
-  pinMode(7, INPUT);
 }
 
 
 
 void loop() {
 
-  readLevel();
-
+  if (Serial.available() > 0) 
+  {      
+    int in = Serial.parseInt();  //Read the data the user has input
+    Serial.print("Received: ");
+    Serial.println(in, DEC);
+    
+    if (in < 0 || in > 16){
+      in = 0;
+    }
+    
+    level = in;
+    
+    Serial.print("Level is now: ");
+    Serial.println(level, DEC);
+  }
+  
   if (level != oldLevel){
     lcd.clear();
   }
   
+  lcd.clear();
   if (level == 0)
   {
       clearLCD();
@@ -60,32 +69,41 @@ void loop() {
   {
     setGreen();
     digitalWrite(8, LOW);
+
   }
   else if ( level < 12)
   {
     setYellow();
     digitalWrite(8, LOW);
+
   }
   else
   {
     setRed();
     digitalWrite(8, HIGH);
   }
-  
-  lcd.setCursor(0 ,0);
-  for ( int i = 0;i<level; i++)
+
+  for(int j = 0; j < 2; j++)
   {
-    lcd.write((unsigned char)0);
-  }
-  lcd.setCursor(0 ,1);
-  for ( int i = 0;i<level; i++)
-  {
-    lcd.write((unsigned char)0);
+    lcd.setCursor(0 ,j);
+    for (int i = 0; i<level; i++)
+    {
+      lcd.write((unsigned char)0);
+    }
   }
 
   oldLevel = level;
   //level = (level + 1) % 16;//for testing
-  delay(15);//test
+  
+  if (level >= 12){
+  
+    delay(1000);
+  
+  }else{
+  
+    delay(15); 
+  
+  }
 }
 
 
@@ -106,16 +124,3 @@ void clearLCD()
    lcd.clear();
    lcd.setRGB(0, 0, 0);
 }
-
-void readLevel(){
-  int level0 = digitalRead(3);
-  int level1 = digitalRead(4);
-  int level2 = digitalRead(5);
-  int level3 = digitalRead(6);
-  int level4 = digitalRead(7);
-  
-  level = 16*level4 + 8*level3 + 4*level2 + 2*level1 + level0;
-  Serial.print("New Level:");
-  Serial.println(level, DEC);
-}
-
