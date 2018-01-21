@@ -29,6 +29,8 @@ vector<Entity> entities;
 int currentFrame = 0;
 int oldRisk = 0;
 
+volatile sig_atomic_t isTerm = 0;
+
 Vector2D centerPoint(box b, int imageWidthPixels, int imageHeightPixels)
 {
     return Vector2D(b.x * imageWidthPixels, (1.0 - b.y) * imageHeightPixels);
@@ -132,6 +134,9 @@ void updateEntities(box* boxes, string* labels, int numObjects, int imageWidthPi
 //            cout << "N'importe quoi" << endl;
         }
     }
+
+    delete[] centers;
+    delete[] enabled;
 }
 
 int getRiskLevel()
@@ -151,14 +156,22 @@ int getRiskLevel()
     return riskLevel;
 }
 
+void onTerm(int signum)
+{
+    isTerm = 1;
+}
+
 int main()
 {
 
     int serialSocket = serialport_init("/dev/cu.usbmodem1411", 9600);
     serialport_write(serialSocket, "0");
 
+    signal(SIGINT, onTerm);
+    signal(SIGTERM, onTerm);
+    signal(SIGSTOP, onTerm);
 
-    ArapahoV2 *darknet = new ArapahoV2();
+    std::shared_ptr<ArapahoV2> darknet(new ArapahoV2());
     ArapahoV2Params params;
 
     params.datacfg = INPUT_DATA_FILE;
@@ -185,7 +198,7 @@ int main()
 
     namedWindow("Guardius", CV_WINDOW_KEEPRATIO);
     VideoCapture cap(INPUT_AV_FILE);
-    while (1)
+    while (!isTerm)
     {
         currentFrame++;
         bool success = cap.read(image);
@@ -255,11 +268,15 @@ int main()
         serialport_write(serialSocket, std::to_string(constrain(0, 16, risk / 20) + 1).c_str());
 
         Mat dst;
-        resize(image, dst, Size(), 4, 4, INTER_LINEAR);
+        resize(image, dst, Size(), 5, 5, INTER_LINEAR);
         imshow("Guardius", dst);
         waitKey((1000 / TARGET_SHOW_FPS));
     }
 
+    cout << "Goodbye!" << endl;
+
+    serialport_write(serialSocket, "0");
     serialport_close(serialSocket);
+
     return 0;
 }
