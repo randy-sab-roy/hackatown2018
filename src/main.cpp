@@ -26,6 +26,7 @@ static char INPUT_AV_FILE[] = "input/input.mp4";
 
 vector<Entity> entities;
 int currentFrame = 0;
+int oldRisk = 0;
 
 Vector2D centerPoint(box b, int imageWidthPixels, int imageHeightPixels)
 {
@@ -141,11 +142,24 @@ int getRiskLevel()
             riskLevel = tmpRisk > riskLevel ? tmpRisk : riskLevel;
         }
     }
+    if(oldRisk > riskLevel)
+    {
+        riskLevel = (0.9*oldRisk + 0.1*riskLevel);
+    }
+    oldRisk = riskLevel;
     return riskLevel;
 }
 
 int main()
 {
+
+//    FILE *serialArduino;
+//    serialArduino = fopen("/dev/tty.usbmodem1451", "wr");
+//
+//    fprintf(serialArduino, "2");
+
+
+
     ArapahoV2 *darknet = new ArapahoV2();
     ArapahoV2Params params;
 
@@ -231,13 +245,13 @@ int main()
 
         // This is where magic happens
         int risk = getRiskLevel();
-        cout << risk << endl;
-//        if (lastRisk != ((risk / 1000 > 15) ? 15 : (risk/1000)))
-//        {
-//            lastRisk = ((risk / 1000 > 15) ? 15 : (risk/1000));
-//            cout << risk << " --- " << ((risk / 1000 > 15) ? 15 : (risk/1000)) << endl;
-////            RestClient::Response r = RestClient::get("http://10.0.1.4/alertLevel?params=" + to_string(((risk / 500 > 15) ? 15 : (risk/1000))));
-//        }
+
+        rectangle(image,
+                  cvPoint(0, imageHeightPixels - 30),
+                  cvPoint(60, imageHeightPixels),
+                  CV_RGB(0, 0, 0), CV_FILLED, 8, 0);
+        putText(image, to_string(risk), cvPoint(7, imageHeightPixels - 7),
+                FONT_HERSHEY_PLAIN, 1, risk > 160 ? CV_RGB(255, 0, 0) : CV_RGB(0, 255, 0), 1, CV_AA);
 
         Mat dst;
         resize(image, dst, Size(), 2, 2, INTER_LINEAR);

@@ -64,7 +64,7 @@ int Entity::calculateRisk(const Entity& ent) {
 
         if(d1 > 0 && d2 > 0)
         {
-            if(abs(d1 - d2) < COLLISION_THRESHOLD)
+            if(abs(d1 - d2) > 0.5 && abs(d1 - d2) < COLLISION_THRESHOLD)
             {
                 return 1000/abs(d1 - d2);
             }
