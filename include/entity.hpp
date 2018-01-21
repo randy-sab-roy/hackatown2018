@@ -1,6 +1,7 @@
 #include <box.h>
 #include "Vector2D.hpp"
 #include <vector>
+#include <math.h>
 
 using namespace std;
 
@@ -13,6 +14,7 @@ public:
 	Vector2D getVelocity();
 	int entityType;
     int lastFrame;
+    int calculateRisk(Entity ent);
 
 private:
 	vector<Vector2D> history;

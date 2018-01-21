@@ -3,9 +3,12 @@ project(guardius)
 
 set(CMAKE_CXX_STANDARD 11)
 
+set(CMAKE_CXX_COMPILER g++)
+
 #Set lib directories
+#Darknet-cpp-sharedlib include
 set(DARKNET_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/include/darknet")
-message(DARKNET_LIB: ${DARKNET_LIB})
+message(DARKNET_INCLUDE_DIR: ${DARKNET_INCLUDE_DIR})
 
 include_directories(include)
 include_directories("${DARKNET_INCLUDE_DIR}")
@@ -45,6 +48,10 @@ if(CMAKE_VERSION VERSION_LESS "2.8.11")
     include_directories(${OpenCV_INCLUDE_DIRS})
 endif()
 
+#restclient-cpp
+include_directories(/usr/local/Cellar/restclient-cpp/0.4.4/include/restclient-cpp/)
+set(RESTCLIENT_LIB     "/usr/local/Cellar/restclient-cpp/0.4.4/lib/librestclient-cpp.dylib")
+
 #Add source for CUDA or not
 if (CUDA_FOUND)
 
@@ -53,14 +60,14 @@ if (CUDA_FOUND)
                 /usr/local/cuda/lib #mac
         )
         set(DARKNET_LIB     "${CMAKE_SOURCE_DIR}/lib/libdarknet-cpp-shared-mac.so")
-        message(DARKNET_INCLUDE_DIR: ${DARKNET_INCLUDE_DIR})
+        message(DARKNET_LIB: ${DARKNET_LIB})
 
     else()
         link_directories(
                 /usr/local/cuda/lib64 #linux
         )
         set(DARKNET_LIB     "${CMAKE_SOURCE_DIR}/lib/libdarknet-cpp-shared-ubuntu-cuda.so")
-        message(DARKNET_INCLUDE_DIR: ${DARKNET_INCLUDE_DIR})
+        message(DARKNET_LIB: ${DARKNET_LIB})
 
     endif ()
 
@@ -75,15 +82,10 @@ if (CUDA_FOUND)
             )
 
     target_link_libraries(${PROJECT_NAME}
-            m
-            pthread
-            stdc++
             cuda
             cudart
             cublas
             curand
-            ${OpenCV_LIBS}
-            ${DARKNET_LIB}
             )
 
 else()
@@ -92,7 +94,7 @@ else()
         #?!?
     else()
         set(DARKNET_LIB     "${CMAKE_SOURCE_DIR}/lib/libdarknet-cpp-shared-ubuntu-sans-cuda.so")
-        message(DARKNET_INCLUDE_DIR: ${DARKNET_INCLUDE_DIR})
+        message(DARKNET_LIB: ${DARKNET_LIB})
 
     endif ()
 
@@ -107,15 +109,17 @@ else()
             src/main.cpp
             )
 
-    target_link_libraries(${PROJECT_NAME}
-            m
-            pthread
-            stdc++
-            ${OpenCV_LIBS}
-            ${DARKNET_LIB}
-            )
-
 endif()
+
+#Link general libs
+target_link_libraries(${PROJECT_NAME}
+        m
+        pthread
+        stdc++
+        ${OpenCV_LIBS}
+        ${DARKNET_LIB}
+        ${RESTCLIENT_LIB}
+        )
 
 #Copy lib
 configure_file(${DARKNET_LIB} libdarknet-cpp-shared.so COPYONLY)

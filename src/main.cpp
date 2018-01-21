@@ -1,6 +1,6 @@
 #include "../arapaho/arapaho.hpp"
 #include "../include/entity.hpp"
-#include <string>
+#include <string.h>
 #include "opencv2/core/core.hpp"
 #include <opencv2/imgproc.hpp>
 #include "opencv2/highgui/highgui.hpp"
@@ -14,8 +14,8 @@
 //#include <restclient-cpp/restclient.h>
 
 #define _ENABLE_OPENCV_SCALING
-#define TARGET_SHOW_FPS (30)
-#define MOVEMENT_THRESHOLD (500)
+#define TARGET_SHOW_FPS (120)
+#define MOVEMENT_THRESHOLD (50000)
 
 using namespace cv;
 using namespace std;
@@ -30,7 +30,14 @@ int currentFrame = 0;
 
 Vector2D centerPoint(box b, int imageWidthPixels, int imageHeightPixels)
 {
-    return Vector2D(b.x * imageWidthPixels, b.y * imageHeightPixels);
+    return Vector2D(b.x * imageWidthPixels, (1.0 - b.y) * imageHeightPixels);
+}
+
+bool isGoodLabel(const string& label)
+{
+    return (label == "car") || (label == "truck") ||
+            (label == "bus") || (label == "person") ||
+            (label == "bicycle") || (label == "motorbike");
 }
 
 void displayBoxes(box *boxes, int numObjects, int imageWidthPixels, int imageHeightPixels, Mat image, string * labels)
@@ -38,6 +45,10 @@ void displayBoxes(box *boxes, int numObjects, int imageWidthPixels, int imageHei
     int leftTopX = 0, leftTopY = 0, rightBotX = 0, rightBotY = 0;
     for (int objId = 0; objId < numObjects; objId++)
     {
+        if(!isGoodLabel(labels[objId]))
+        {
+            continue;
+        }
         leftTopX = 1 + imageWidthPixels * (boxes[objId].x - boxes[objId].w / 2);
         leftTopY = 1 + imageHeightPixels * (boxes[objId].y - boxes[objId].h / 2);
         rightBotX = 1 + imageWidthPixels * (boxes[objId].x + boxes[objId].w / 2);
@@ -57,23 +68,28 @@ void displayBoxes(box *boxes, int numObjects, int imageWidthPixels, int imageHei
     }
 }
 
-void updateEntities(box* boxes, int numObjects, int imageWidthPixels, int imageHeightPixels)
+void updateEntities(box* boxes, string* labels, int numObjects, int imageWidthPixels, int imageHeightPixels)
 {
     Vector2D * centers = new Vector2D[numObjects];
     bool * enabled = new bool[numObjects];
+
+    // Calculate center points
     for(int i = 0; i < numObjects; i++)
     {
         centers[i] = centerPoint(boxes[i], imageWidthPixels, imageHeightPixels);
         enabled[i] = true;
     }
-    
+
+    // Loop over existing entities
     for(int i = 0; i < entities.size(); i++)
     {
         int closestIndex = -1;
         int closestDistance = -1;
+
+        // Loop over new boxes
         for(int j = 0; j < numObjects; j++)
         {
-            if(enabled[j])
+            if(enabled[j] && isGoodLabel(labels[j]))
             {
                 int tmpDistance = entities[i].lastPosition().distance(centers[j]);
                 if((closestDistance == -1) || tmpDistance < closestDistance)
@@ -83,16 +99,17 @@ void updateEntities(box* boxes, int numObjects, int imageWidthPixels, int imageH
                 }
             }
         }
-        cout << closestDistance << endl;
 
         if(closestDistance > -1 && closestDistance < MOVEMENT_THRESHOLD)
         {
             entities[i].addPosition(centers[closestIndex]);
+//            std::cout << entities[i].getVelocity().x << ", " << entities[i].getVelocity().y << endl;
             enabled[closestIndex] = false;
             entities[i].lastFrame = currentFrame;
         }
     }
 
+    // Erase unused entities
     for (int i = 0; i < entities.size(); ++i) {
         if(entities[i].lastFrame != currentFrame)
         {
@@ -101,17 +118,30 @@ void updateEntities(box* boxes, int numObjects, int imageWidthPixels, int imageH
 
     }
 
+    // Create new entities
     for(int i = 0; i < numObjects; i++)
     {
-        if(enabled[i])
+        if(enabled[i] && isGoodLabel(labels[i]))
         {
             Entity ent = Entity();
             ent.addPosition(centers[i]);
             entities.push_back(ent);
             ent.lastFrame = currentFrame;
+//            cout << "N'importe quoi" << endl;
         }
     }
-    std::cout << (entities.size()) << std::endl;
+}
+
+int getRiskLevel()
+{
+    int riskLevel = 0;
+    for (int i = 0; i < entities.size(); ++i) {
+        for (int j = i+1; j < entities.size(); ++j) {
+            int tmpRisk = entities[i].calculateRisk(entities[j]);
+            riskLevel = tmpRisk > riskLevel ? tmpRisk : riskLevel;
+        }
+    }
+    return riskLevel;
 }
 
 int main()
@@ -143,7 +173,7 @@ int main()
     ArapahoV2ImageBuff imageBuffer;
     Mat image;
 
-    namedWindow("Guardius", CV_WINDOW_AUTOSIZE);
+    namedWindow("Guardius", CV_WINDOW_KEEPRATIO);
     VideoCapture cap(INPUT_AV_FILE);
     while (1)
     {
@@ -153,11 +183,14 @@ int main()
 
         if (!success || image.empty())
         {
-            if (darknet)
-                delete darknet;
-            darknet = nullptr;
-            waitKey();
-            return -1;
+            cap.set(CV_CAP_PROP_POS_FRAMES, 0);
+            continue;
+
+            //if (darknet)
+            //    delete darknet;
+            //darknet = nullptr;
+            //waitKey();
+            //return -1;
         }
 
         imageWidthPixels = image.size().width;
@@ -182,7 +215,7 @@ int main()
             // Get boxes and labels
             darknet->GetBoxes(boxes, labels, numObjects);
             displayBoxes(boxes, numObjects, imageWidthPixels, imageHeightPixels, image, labels);
-            updateEntities(boxes, numObjects, imageWidthPixels, imageHeightPixels);
+            updateEntities(boxes, labels, numObjects, imageWidthPixels, imageHeightPixels);
 
             if (boxes)
             {
@@ -199,8 +232,11 @@ int main()
 
 
         // This is where magic happens
+        getRiskLevel();
 
-        imshow("Guardius", image);
+        Mat dst;
+        resize(image, dst, Size(), 2, 2, INTER_LINEAR);
+        imshow("Guardius", dst);
         waitKey((1000 / TARGET_SHOW_FPS));
     }
 

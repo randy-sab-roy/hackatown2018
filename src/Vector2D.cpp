@@ -4,6 +4,11 @@ Vector2D::Vector2D() : x(0), y(0) {}
 
 Vector2D::Vector2D(int x, int y) : x(x), y(y) {}
 
+int Vector2D::operator*(Vector2D vec)
+{
+    return this->x * vec.x + this->y * vec.y;
+}
+
 int Vector2D::distance(Vector2D v) {
     int x = this->x - v.x;
     int y = this->y - v.y;
