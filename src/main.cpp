@@ -83,8 +83,18 @@ void updateEntities(box* boxes, int numObjects)
             entities[i].addPosition(centers[closestIndex]);
             enabled[closestIndex] = false;
         }
-
     }
+
+    for(int i = 0; i < numObjects; i++)
+    {
+        if(enabled[i])
+        {
+            Entity ent = Entity();
+            ent.addPosition(centers[i]);
+            entities.push_back(ent);
+        }
+    }
+    EPRINTF(entities.size());
 }
 
 int main()
