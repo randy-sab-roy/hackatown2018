@@ -2,13 +2,16 @@
 
 const int HISTORY_SIZE = 5;
 
-void Entity::addPosition(box b)
+void Entity::addPosition(Vector2D p)
 {
-    Vector2D p = Vector2D(b.x + (b.w / 2), b.y + (b.h / 2));
-
     while (this->history.size() >= HISTORY_SIZE)
         this->history.pop_back();
     this->history.insert(this->history.begin(), p);
+}
+
+Vector2D Entity::lastPosition()
+{
+    return this->history.front();
 }
 
 Vector2D Entity::getVelocity()

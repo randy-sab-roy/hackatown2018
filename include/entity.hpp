@@ -7,7 +7,8 @@ using namespace std;
 class Entity
 {
 public:
-	void addPosition(box b);
+	void addPosition(Vector2D p);
+	Vector2D lastPosition();
 	// Gets the speed in px per frame
 	Vector2D getVelocity();
 	int entityType;
